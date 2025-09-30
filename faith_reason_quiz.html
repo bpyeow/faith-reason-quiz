@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>信仰与理性测验</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            max-width: 600px;
+            width: 100%;
+            padding: 40px;
+        }
+        
+        h1 {
+            color: #667eea;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+        
+        h2 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 18px;
+        }
+        
+        .progress {
+            background: #e0e0e0;
+            height: 8px;
+            border-radius: 4px;
+            margin-bottom: 30px;
+            overflow: hidden;
+        }
+        
+        .progress-bar {
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            height: 100%;
+            transition: width 0.3s ease;
+        }
+        
+        .question {
+            font-size: 18px;
+            color: #333;
+            margin-bottom: 25px;
+            line-height: 1.6;
+        }
+        
+        .options {
+            display: grid;
+            gap: 12px;
+        }
+        
+        .option-btn {
+            background: #f5f5f5;
+            border: 2px solid #e0e0e0;
+            padding: 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 16px;
+            text-align: left;
+            color: #333;
+        }
+        
+        .option-btn:hover {
+            background: #667eea;
+            border-color: #667eea;
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+        }
+        
+        .result {
+            text-align: center;
+        }
+        
+        .result h2 {
+            color: #667eea;
+            font-size: 24px;
+            margin-bottom: 20px;
+        }
+        
+        .analysis {
+            background: #f5f5f5;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+            font-size: 18px;
+            line-height: 1.8;
+            color: #333;
+        }
+        
+        .scores {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin: 25px 0;
+        }
+        
+        .score-item {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        
+        .score-label {
+            font-size: 14px;
+            opacity: 0.9;
+            margin-bottom: 8px;
+        }
+        
+        .score-value {
+            font-size: 32px;
+            font-weight: bold;
+        }
+        
+        .restart-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 16px 40px;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            margin-top: 20px;
+        }
+        
+        .restart-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+        }
+        
+        @media (max-width: 480px) {
+            .container {
+                padding: 24px;
+            }
+            
+            h1 {
+                font-size: 24px;
+            }
+            
+            .question {
+                font-size: 16px;
+            }
+            
+            .option-btn {
+                padding: 14px;
+                font-size: 15px;
+            }
+            
+            .scores {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container" id="app">
+        <h1>信仰与理性测验</h1>
+        <div id="content"></div>
+    </div>
+
+    <script>
+        const questions = [
+            { q: "如果有人说：拜三拜，财神就会眷顾你。你的第一感觉是？", options: ["真有道理", "不妨一试", "说说而已", "完全不信"] },
+            { q: "过年时亲友拉你去拜财神，你会：", options: ["开心参与", "礼貌跟随", "表示不需要", "明确拒绝"] },
+            { q: "如果你中彩票，你会觉得是：", options: ["神明庇佑", "运气", "投资智慧", "命中注定"] },
+            { q: "你是否相信'心诚则灵'？", options: ["绝对相信", "有点相信", "看情况", "不信"] },
+            { q: "在你看来，财富的获得更接近：", options: ["神明庇佑", "命运安排", "自己努力", "社会关系"] },
+            { q: "面对人生困境，你更常求助：", options: ["宗教仪式", "家人朋友", "专业顾问", "自我反思"] },
+            { q: "你听到'拜三拜'，最先联想到：", options: ["庙会/寺庙", "婚礼/传统仪式", "家庭祭祖", "形式主义"] },
+            { q: "你更容易接受的祝福语是：", options: ["阿弥陀佛", "愿主保佑你", "上帝祝福你", "祝你成功"] },
+            { q: "你觉得'命运'是否存在？", options: ["完全存在", "部分存在", "大部分靠人", "不存在"] },
+            { q: "你对风水的态度：", options: ["坚信", "有参考价值", "无所谓", "完全拒绝"] },
+            { q: "你更倾向的价值观：", options: ["佛：因缘果报", "道：无为顺其自然", "儒：修身齐家治国", "现代：自我实现"] },
+            { q: "如果有人请你参加宗教活动，你会：", options: ["很乐意", "看情况", "礼貌拒绝", "明确拒绝"] },
+            { q: "你对祭祖习俗的态度：", options: ["必须传承", "保持但简化", "看父母是否需要", "没必要"] },
+            { q: "当你听到'虔诚'一词，你的联想是：", options: ["宗教信仰", "人的真心", "盲目信仰", "传统仪式"] },
+            { q: "投资前你会更依赖：", options: ["占卜/求签", "他人建议", "自己分析", "随机选择"] },
+            { q: "如果钱包里多放一张'护身符'，你会觉得：", options: ["能保财运", "心理安慰", "装饰品", "多余"] },
+            { q: "你更常用的决策方式是：", options: ["凭直觉", "听取意见", "逻辑推理", "随机应变"] },
+            { q: "如果医生和高僧给出不同的健康建议，你倾向：", options: ["高僧", "两者结合", "医生", "自己判断"] },
+            { q: "你相信'科学与宗教可以并存'吗？", options: ["绝对可以", "有些冲突", "难以调和", "完全对立"] },
+            { q: "你觉得'努力和好运'的关系是：", options: ["运气大于努力", "努力和运气各半", "努力大于运气", "全靠自己"] },
+            { q: "你更喜欢的解释方式：", options: ["神秘故事", "哲学寓言", "科学逻辑", "幽默讽刺"] },
+            { q: "如果有人说'你发财了是因为三拜'，你会：", options: ["认同", "笑笑", "反驳", "没兴趣"] },
+            { q: "你觉得'财富'的最终意义是：", options: ["满足生活", "行善助人", "证明价值", "自我享乐"] },
+            { q: "你对'拜三拜'的潜意识感受：", options: ["安全感", "传统习俗", "无所谓", "不舒服"] },
+            { q: "你更愿意相信哪种故事：", options: ["佛祖显灵", "道士符咒", "科学突破", "人生传奇"] },
+            { q: "如果遇到不公平，你会：", options: ["接受命运", "求神庇佑", "据理力争", "看缘分"] },
+            { q: "你对'迷信'这个词的感觉：", options: ["负面", "中性", "正面", "看语境"] },
+            { q: "当别人说'拜三拜能发财'时，你会：", options: ["有点羡慕", "好奇", "嘲笑", "冷漠"] },
+            { q: "你更愿意成为的人：", options: ["信仰坚定的人", "理性智慧的人", "世故圆滑的人", "自由洒脱的人"] },
+            { q: "如果最后告诉你：你其实比自己想象的更'虔诚/更理智'，你会：", options: ["接受", "半信半疑", "质疑", "不在乎"] }
+        ];
+
+        let currentQuestion = 0;
+        let answers = [];
+
+        function renderQuestion() {
+            const progress = ((currentQuestion / questions.length) * 100).toFixed(0);
+            const content = document.getElementById('content');
+            
+            content.innerHTML = `
+                <h2>问题 ${currentQuestion + 1} / ${questions.length}</h2>
+                <div class="progress">
+                    <div class="progress-bar" style="width: ${progress}%"></div>
+                </div>
+                <div class="question">${questions[currentQuestion].q}</div>
+                <div class="options">
+                    ${questions[currentQuestion].options.map((opt, i) => 
+                        `<button class="option-btn" onclick="handleAnswer('${opt}')">${opt}</button>`
+                    ).join('')}
+                </div>
+            `;
+        }
+
+        function handleAnswer(option) {
+            answers[currentQuestion] = option;
+            if (currentQuestion < questions.length - 1) {
+                currentQuestion++;
+                renderQuestion();
+            } else {
+                calculateResult();
+            }
+        }
+
+        function calculateResult() {
+            let scores = { faith: 0, reason: 0, mixed: 0, fate: 0 };
+            
+            const faithAnswers = ["真有道理","开心参与","神明庇佑","绝对相信","庙会/寺庙","阿弥陀佛","坚信","佛：因缘果报","很乐意","必须传承","宗教信仰","占卜/求签","能保财运","高僧","运气大于努力","神秘故事","认同","佛祖显灵","求神庇佑"];
+            const mixedAnswers = ["不妨一试","礼貌跟随","有点相信","部分存在","有参考价值","道：无为顺其自然","看情况","保持但简化","人的真心","他人建议","心理安慰","听取意见","两者结合","努力和运气各半","哲学寓言","笑笑","道士符咒","看缘分","中性","好奇","半信半疑"];
+            const reasonAnswers = ["说说而已","不信","自己努力","专业顾问","大部分靠人","无所谓","儒：修身齐家治国","礼貌拒绝","看父母是否需要","逻辑推理","医生","科学逻辑","反驳","证明价值","科学突破","据理力争","负面","嘲笑","理性智慧的人","质疑"];
+            
+            answers.forEach(answer => {
+                if (faithAnswers.includes(answer)) {
+                    scores.faith++;
+                } else if (mixedAnswers.includes(answer)) {
+                    scores.mixed++;
+                } else if (reasonAnswers.includes(answer)) {
+                    scores.reason++;
+                } else {
+                    scores.fate++;
+                }
+            });
+
+            const sortedScores = Object.entries(scores).sort((a, b) => b[1] - a[1]);
+            const dominant = sortedScores[0][0];
+
+            let analysis = "";
+            let analysisType = "";
+            if (dominant === "faith") {
+                analysisType = "信仰型";
+                analysis = "你倾向<strong>信仰型</strong>：对宗教与传统文化有深厚认同，容易在仪式中找到安全感。";
+            } else if (dominant === "reason") {
+                analysisType = "理智型";
+                analysis = "你倾向<strong>理智型</strong>：更依赖逻辑与实践，重视科学和自我判断。";
+            } else if (dominant === "mixed") {
+                analysisType = "折衷型";
+                analysis = "你倾向<strong>折衷型</strong>：信仰与理智兼顾，既尊重传统，也重视现实。";
+            } else {
+                analysisType = "宿命型";
+                analysis = "你倾向<strong>宿命型</strong>：更随缘顺势，容易接受命运安排。";
+            }
+
+            // Send results to Google Sheets
+            sendToGoogleSheets(scores, analysisType);
+
+            renderResult(scores, analysis);
+        }
+
+        async function sendToGoogleSheets(scores, resultType) {
+            const scriptURL = 'https://script.google.com/macros/s/AKfycbxFcxcKKOKOtpL-WhbzqP0E1anpvQU7PBhBGRHVaRf0Ssw3_kyK2q-KZ9MsaCF6mqfFLA/exec';
+            
+            const data = {
+                timestamp: new Date().toISOString(),
+                resultType: resultType,
+                faithScore: scores.faith,
+                reasonScore: scores.reason,
+                mixedScore: scores.mixed,
+                fateScore: scores.fate,
+                totalQuestions: questions.length,
+                answers: answers
+            };
+
+            try {
+                const response = await fetch(scriptURL, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(data)
+                });
+                console.log('Results sent to Google Sheets successfully');
+            } catch (error) {
+                console.error('Error sending to Google Sheets:', error);
+            }
+        }
+
+        function renderResult(scores, analysis) {
+            const content = document.getElementById('content');
+            content.innerHTML = `
+                <div class="result">
+                    <h2>🎉 测验结果</h2>
+                    <div class="analysis">${analysis}</div>
+                    <div class="scores">
+                        <div class="score-item">
+                            <div class="score-label">信仰成分</div>
+                            <div class="score-value">${scores.faith}</div>
+                        </div>
+                        <div class="score-item">
+                            <div class="score-label">理智成分</div>
+                            <div class="score-value">${scores.reason}</div>
+                        </div>
+                        <div class="score-item">
+                            <div class="score-label">折衷成分</div>
+                            <div class="score-value">${scores.mixed}</div>
+                        </div>
+                        <div class="score-item">
+                            <div class="score-label">宿命成分</div>
+                            <div class="score-value">${scores.fate}</div>
+                        </div>
+                    </div>
+                    <button class="restart-btn" onclick="restart()">再测一次</button>
+                </div>
+            `;
+        }
+
+        function restart() {
+            currentQuestion = 0;
+            answers = [];
+            renderQuestion();
+        }
+
+        // Initialize
+        renderQuestion();
+    </script>
+</body>
+</html>
