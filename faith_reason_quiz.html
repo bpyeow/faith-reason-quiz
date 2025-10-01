@@ -173,50 +173,283 @@
                 grid-template-columns: 1fr;
             }
         }
+        
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+        
+        @keyframes slideOut {
+            from {
+                transform: translateX(0);
+                opacity: 1;
+            }
+            to {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+        }
+        
+        .test-mode-btn {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: #ff9800;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 50px;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(255, 152, 0, 0.4);
+            font-size: 14px;
+            font-weight: bold;
+            z-index: 9999;
+            transition: all 0.3s ease;
+        }
+        
+        .test-mode-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 6px 20px rgba(255, 152, 0, 0.6);
+        }
     </style>
 </head>
 <body>
+    <button id="testModeBtn" class="test-mode-btn" onclick="toggleTestMode()">🔍 Test Mode</button>
     <div class="container" id="app">
         <h1>信仰与理性测验</h1>
         <div id="content"></div>
     </div>
 
     <script>
-        const questions = [
-            { q: "如果有人说：拜三拜，财神就会眷顾你。你的第一感觉是？", options: ["真有道理", "不妨一试", "说说而已", "完全不信"] },
-            { q: "过年时亲友拉你去拜财神，你会：", options: ["开心参与", "礼貌跟随", "表示不需要", "明确拒绝"] },
-            { q: "如果你中彩票，你会觉得是：", options: ["神明庇佑", "运气", "投资智慧", "命中注定"] },
-            { q: "你是否相信'心诚则灵'？", options: ["绝对相信", "有点相信", "看情况", "不信"] },
-            { q: "在你看来，财富的获得更接近：", options: ["神明庇佑", "命运安排", "自己努力", "社会关系"] },
-            { q: "面对人生困境，你更常求助：", options: ["宗教仪式", "家人朋友", "专业顾问", "自我反思"] },
-            { q: "你听到'拜三拜'，最先联想到：", options: ["庙会/寺庙", "婚礼/传统仪式", "家庭祭祖", "形式主义"] },
-            { q: "你更容易接受的祝福语是：", options: ["阿弥陀佛", "愿主保佑你", "上帝祝福你", "祝你成功"] },
-            { q: "你觉得'命运'是否存在？", options: ["完全存在", "部分存在", "大部分靠人", "不存在"] },
-            { q: "你对风水的态度：", options: ["坚信", "有参考价值", "无所谓", "完全拒绝"] },
-            { q: "你更倾向的价值观：", options: ["佛：因缘果报", "道：无为顺其自然", "儒：修身齐家治国", "现代：自我实现"] },
-            { q: "如果有人请你参加宗教活动，你会：", options: ["很乐意", "看情况", "礼貌拒绝", "明确拒绝"] },
-            { q: "你对祭祖习俗的态度：", options: ["必须传承", "保持但简化", "看父母是否需要", "没必要"] },
-            { q: "当你听到'虔诚'一词，你的联想是：", options: ["宗教信仰", "人的真心", "盲目信仰", "传统仪式"] },
-            { q: "投资前你会更依赖：", options: ["占卜/求签", "他人建议", "自己分析", "随机选择"] },
-            { q: "如果钱包里多放一张'护身符'，你会觉得：", options: ["能保财运", "心理安慰", "装饰品", "多余"] },
-            { q: "你更常用的决策方式是：", options: ["凭直觉", "听取意见", "逻辑推理", "随机应变"] },
-            { q: "如果医生和高僧给出不同的健康建议，你倾向：", options: ["高僧", "两者结合", "医生", "自己判断"] },
-            { q: "你相信'科学与宗教可以并存'吗？", options: ["绝对可以", "有些冲突", "难以调和", "完全对立"] },
-            { q: "你觉得'努力和好运'的关系是：", options: ["运气大于努力", "努力和运气各半", "努力大于运气", "全靠自己"] },
-            { q: "你更喜欢的解释方式：", options: ["神秘故事", "哲学寓言", "科学逻辑", "幽默讽刺"] },
-            { q: "如果有人说'你发财了是因为三拜'，你会：", options: ["认同", "笑笑", "反驳", "没兴趣"] },
-            { q: "你觉得'财富'的最终意义是：", options: ["满足生活", "行善助人", "证明价值", "自我享乐"] },
-            { q: "你对'拜三拜'的潜意识感受：", options: ["安全感", "传统习俗", "无所谓", "不舒服"] },
-            { q: "你更愿意相信哪种故事：", options: ["佛祖显灵", "道士符咒", "科学突破", "人生传奇"] },
-            { q: "如果遇到不公平，你会：", options: ["接受命运", "求神庇佑", "据理力争", "看缘分"] },
-            { q: "你对'迷信'这个词的感觉：", options: ["负面", "中性", "正面", "看语境"] },
-            { q: "当别人说'拜三拜能发财'时，你会：", options: ["有点羡慕", "好奇", "嘲笑", "冷漠"] },
-            { q: "你更愿意成为的人：", options: ["信仰坚定的人", "理性智慧的人", "世故圆滑的人", "自由洒脱的人"] },
-            { q: "如果最后告诉你：你其实比自己想象的更'虔诚/更理智'，你会：", options: ["接受", "半信半疑", "质疑", "不在乎"] }
+        const questionsData = [
+            { q: "如果有人说:拜三拜,财神就会眷顾你。你的第一感觉是？", options: [
+                { text: "确实有道理，神明会保佑", type: "faith" },
+                { text: "不妨试试看，也许有用", type: "mixed" },
+                { text: "这是迷信，没有科学依据", type: "reason" },
+                { text: "无所谓，信不信都行", type: "fate" }
+            ]},
+            { q: "过年时亲友拉你去拜财神，你会：", options: [
+                { text: "很开心，这是好事", type: "faith" },
+                { text: "跟着去，尊重习俗", type: "mixed" },
+                { text: "委婉拒绝，我不信这些", type: "reason" },
+                { text: "随便，去不去都可以", type: "fate" }
+            ]},
+            { q: "如果你中彩票，你会觉得是：", options: [
+                { text: "是神明在眷顾我", type: "faith" },
+                { text: "运气和概率的结果", type: "mixed" },
+                { text: "纯粹的随机概率事件", type: "reason" },
+                { text: "命中注定该有这一笔", type: "fate" }
+            ]},
+            { q: "你是否相信'心诚则灵'？", options: [
+                { text: "绝对相信，心诚最重要", type: "faith" },
+                { text: "有一定道理，心态很重要", type: "mixed" },
+                { text: "不信，结果取决于行动", type: "reason" },
+                { text: "信不信都一样，该来的会来", type: "fate" }
+            ]},
+            { q: "在你看来，财富的获得更接近：", options: [
+                { text: "神明的庇佑和保佑", type: "faith" },
+                { text: "努力加上一些运气", type: "mixed" },
+                { text: "完全靠自己的努力", type: "reason" },
+                { text: "命运早已注定好了", type: "fate" }
+            ]},
+            { q: "面对人生困境，你更常求助：", options: [
+                { text: "祈祷或宗教仪式", type: "faith" },
+                { text: "找家人朋友倾诉", type: "mixed" },
+                { text: "寻求专业人士帮助", type: "reason" },
+                { text: "顺其自然，不刻意解决", type: "fate" }
+            ]},
+            { q: "你听到'拜三拜'，最先联想到：", options: [
+                { text: "庙宇里的虔诚祈祷", type: "faith" },
+                { text: "传统文化的一部分", type: "mixed" },
+                { text: "封建迷信的残留", type: "reason" },
+                { text: "一种习惯而已，没深究", type: "fate" }
+            ]},
+            { q: "你更容易接受的祝福语是：", options: [
+                { text: "愿佛祖/上帝保佑你", type: "faith" },
+                { text: "祝你好运，一切顺利", type: "mixed" },
+                { text: "相信你的能力和努力", type: "reason" },
+                { text: "顺其自然就好", type: "fate" }
+            ]},
+            { q: "你觉得'命运'是否存在？", options: [
+                { text: "存在，是上天的安排", type: "faith" },
+                { text: "三分天注定，七分靠打拼", type: "mixed" },
+                { text: "不存在，人定胜天", type: "reason" },
+                { text: "完全存在，一切早已注定", type: "fate" }
+            ]},
+            { q: "你对风水的态度：", options: [
+                { text: "深信不疑，会认真布局", type: "faith" },
+                { text: "有一定道理，可以参考", type: "mixed" },
+                { text: "纯属迷信，没有依据", type: "reason" },
+                { text: "不在乎，随便怎样都行", type: "fate" }
+            ]},
+            { q: "你更倾向的价值观：", options: [
+                { text: "佛家：因果轮回，积德行善", type: "faith" },
+                { text: "道家：平衡和谐，顺应自然", type: "mixed" },
+                { text: "现代：理性思考，自我实现", type: "reason" },
+                { text: "随缘就好，不追求什么", type: "fate" }
+            ]},
+            { q: "如果有人请你参加宗教活动，你会：", options: [
+                { text: "很愿意，这是修行", type: "faith" },
+                { text: "看情况，如果合适就去", type: "mixed" },
+                { text: "不去，我不信宗教", type: "reason" },
+                { text: "无所谓，去不去都可以", type: "fate" }
+            ]},
+            { q: "你对祭祖习俗的态度：", options: [
+                { text: "必须传承，慎终追远", type: "faith" },
+                { text: "保留形式，表达心意", type: "mixed" },
+                { text: "没必要，人死如灯灭", type: "reason" },
+                { text: "随意，做不做都行", type: "fate" }
+            ]},
+            { q: "当你听到'虔诚'一词，你的联想是：", options: [
+                { text: "对神明的敬畏和信仰", type: "faith" },
+                { text: "一种真诚的态度", type: "mixed" },
+                { text: "盲目相信，缺乏理性", type: "reason" },
+                { text: "虔不虔诚都无所谓", type: "fate" }
+            ]},
+            { q: "投资前你会更依赖：", options: [
+                { text: "占卜或求神问卜", type: "faith" },
+                { text: "结合专家意见和自己判断", type: "mixed" },
+                { text: "完全依靠数据分析", type: "reason" },
+                { text: "凭感觉，随便选", type: "fate" }
+            ]},
+            { q: "如果钱包里多放一张'护身符'，你会觉得：", options: [
+                { text: "会带来好运和保护", type: "faith" },
+                { text: "有心理安慰作用", type: "mixed" },
+                { text: "完全没用，是迷信", type: "reason" },
+                { text: "放不放都一样", type: "fate" }
+            ]},
+            { q: "你更常用的决策方式是：", options: [
+                { text: "祈祷后凭心中感应", type: "faith" },
+                { text: "综合各方意见后决定", type: "mixed" },
+                { text: "理性分析利弊后决定", type: "reason" },
+                { text: "随便，怎样都行", type: "fate" }
+            ]},
+            { q: "如果医生和高僧给出不同的健康建议，你倾向：", options: [
+                { text: "听高僧的，他有智慧", type: "faith" },
+                { text: "两者都听，综合考虑", type: "mixed" },
+                { text: "只听医生的专业建议", type: "reason" },
+                { text: "都不重要，顺其自然", type: "fate" }
+            ]},
+            { q: "你相信'科学与宗教可以并存'吗？", options: [
+                { text: "完全可以，殊途同归", type: "faith" },
+                { text: "可以并存，各有领域", type: "mixed" },
+                { text: "不能，宗教是落后的", type: "reason" },
+                { text: "无所谓，存不存在都行", type: "fate" }
+            ]},
+            { q: "你觉得'努力和好运'的关系是：", options: [
+                { text: "好运来自神明庇佑", type: "faith" },
+                { text: "努力和运气都重要", type: "mixed" },
+                { text: "只有努力才能成功", type: "reason" },
+                { text: "命中注定，努力也没用", type: "fate" }
+            ]},
+            { q: "你更喜欢的解释方式：", options: [
+                { text: "神迹和灵验的故事", type: "faith" },
+                { text: "富有哲理的寓言", type: "mixed" },
+                { text: "严谨的科学解释", type: "reason" },
+                { text: "都行，听听就好", type: "fate" }
+            ]},
+            { q: "如果有人说'你发财了是因为三拜'，你会：", options: [
+                { text: "对，可能真的有关", type: "faith" },
+                { text: "笑笑，不否定也不认同", type: "mixed" },
+                { text: "反驳，这是迷信想法", type: "reason" },
+                { text: "随便他怎么说", type: "fate" }
+            ]},
+            { q: "你觉得'财富'的最终意义是：", options: [
+                { text: "行善布施，积累功德", type: "faith" },
+                { text: "满足生活，帮助他人", type: "mixed" },
+                { text: "实现价值，创造影响", type: "reason" },
+                { text: "及时行乐，钱财身外物", type: "fate" }
+            ]},
+            { q: "你对'拜三拜'的潜意识感受：", options: [
+                { text: "带来安全感和庇佑", type: "faith" },
+                { text: "是文化传统的一部分", type: "mixed" },
+                { text: "觉得不舒服，是迷信", type: "reason" },
+                { text: "没感觉，无所谓", type: "fate" }
+            ]},
+            { q: "你更愿意相信哪种故事：", options: [
+                { text: "神明显灵救人的奇迹", type: "faith" },
+                { text: "人与自然和谐的智慧", type: "mixed" },
+                { text: "科学改变世界的壮举", type: "reason" },
+                { text: "都差不多，随便听听", type: "fate" }
+            ]},
+            { q: "如果遇到不公平，你会：", options: [
+                { text: "祈祷求神明伸张正义", type: "faith" },
+                { text: "先尝试沟通协商", type: "mixed" },
+                { text: "据理力争，维护权益", type: "reason" },
+                { text: "算了，接受命运安排", type: "fate" }
+            ]},
+            { q: "你对'迷信'这个词的感觉：", options: [
+                { text: "不是迷信，是信仰", type: "faith" },
+                { text: "要看具体情况", type: "mixed" },
+                { text: "负面词，该批判", type: "reason" },
+                { text: "无所谓，什么都行", type: "fate" }
+            ]},
+            { q: "当别人说'拜三拜能发财'时，你会：", options: [
+                { text: "觉得有道理，想试试", type: "faith" },
+                { text: "保持好奇和开放", type: "mixed" },
+                { text: "觉得可笑，是骗人的", type: "reason" },
+                { text: "不关心，冷漠对待", type: "fate" }
+            ]},
+            { q: "你更愿意成为的人：", options: [
+                { text: "信仰坚定的虔诚者", type: "faith" },
+                { text: "平衡智慧的处世者", type: "mixed" },
+                { text: "理性睿智的思考者", type: "reason" },
+                { text: "随遇而安的自由人", type: "fate" }
+            ]},
+            { q: "如果最后告诉你：你其实比自己想象的更'虔诚/更理智'，你会：", options: [
+                { text: "接受，可能确实如此", type: "faith" },
+                { text: "半信半疑，需要思考", type: "mixed" },
+                { text: "质疑，要看证据", type: "reason" },
+                { text: "不在乎，结果无所谓", type: "fate" }
+            ]}
         ];
+
+        // 打乱选项顺序，避免固定的分类次序
+        function shuffleOptions(options) {
+            const shuffled = [...options];
+            for (let i = shuffled.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+            }
+            return shuffled;
+        }
+
+        // 初始化题目，打乱每题的选项顺序
+        const questions = questionsData.map(q => ({
+            q: q.q,
+            options: shuffleOptions(q.options)
+        }));
 
         let currentQuestion = 0;
         let answers = [];
+        let testMode = false;
+
+        function toggleTestMode() {
+            testMode = !testMode;
+            const btn = document.getElementById('testModeBtn');
+            if (testMode) {
+                btn.textContent = '🔍 Test Mode: ON';
+                btn.style.background = '#4CAF50';
+                showTestNotification('🔍 Test Mode Enabled - Check console (F12)', 'success');
+                console.log('%c🔍 TEST MODE ENABLED', 'background: #4CAF50; color: white; padding: 10px; font-size: 16px; font-weight: bold;');
+                console.log('📋 Instructions:');
+                console.log('1. Open this console (F12)');
+                console.log('2. Complete the quiz');
+                console.log('3. Watch for data being sent');
+                console.log('4. Check your Google Sheet for results');
+            } else {
+                btn.textContent = '🔍 Test Mode';
+                btn.style.background = '#ff9800';
+                showTestNotification('Test Mode Disabled', 'success');
+                console.log('%c🔍 TEST MODE DISABLED', 'background: #ff9800; color: white; padding: 10px; font-size: 16px; font-weight: bold;');
+            }
+        }
 
         function renderQuestion() {
             const progress = ((currentQuestion / questions.length) * 100).toFixed(0);
@@ -230,18 +463,28 @@
                 <div class="question">${questions[currentQuestion].q}</div>
                 <div class="options">
                     ${questions[currentQuestion].options.map((opt, i) => 
-                        `<button class="option-btn" onclick="handleAnswer('${opt}')">${opt}</button>`
+                        `<button class="option-btn" onclick="handleAnswer(${i})">${opt.text}</button>`
                     ).join('')}
                 </div>
             `;
         }
 
-        function handleAnswer(option) {
-            answers[currentQuestion] = option;
+        function handleAnswer(optionIndex) {
+            const selectedOption = questions[currentQuestion].options[optionIndex];
+            answers[currentQuestion] = selectedOption.type;
+            
+            if (testMode) {
+                console.log(`📝 Question ${currentQuestion + 1} answered: "${selectedOption.text}" (type: ${selectedOption.type})`);
+            }
+            
             if (currentQuestion < questions.length - 1) {
                 currentQuestion++;
                 renderQuestion();
             } else {
+                if (testMode) {
+                    console.log('%c✅ Quiz Completed!', 'background: #4CAF50; color: white; padding: 10px; font-size: 14px; font-weight: bold;');
+                    console.log('📊 Calculating results...');
+                }
                 calculateResult();
             }
         }
@@ -249,19 +492,12 @@
         function calculateResult() {
             let scores = { faith: 0, reason: 0, mixed: 0, fate: 0 };
             
-            const faithAnswers = ["真有道理","开心参与","神明庇佑","绝对相信","庙会/寺庙","阿弥陀佛","坚信","佛：因缘果报","很乐意","必须传承","宗教信仰","占卜/求签","能保财运","高僧","运气大于努力","神秘故事","认同","佛祖显灵","求神庇佑"];
-            const mixedAnswers = ["不妨一试","礼貌跟随","有点相信","部分存在","有参考价值","道：无为顺其自然","看情况","保持但简化","人的真心","他人建议","心理安慰","听取意见","两者结合","努力和运气各半","哲学寓言","笑笑","道士符咒","看缘分","中性","好奇","半信半疑"];
-            const reasonAnswers = ["说说而已","不信","自己努力","专业顾问","大部分靠人","无所谓","儒：修身齐家治国","礼貌拒绝","看父母是否需要","逻辑推理","医生","科学逻辑","反驳","证明价值","科学突破","据理力争","负面","嘲笑","理性智慧的人","质疑"];
-            
-            answers.forEach(answer => {
-                if (faithAnswers.includes(answer)) {
-                    scores.faith++;
-                } else if (mixedAnswers.includes(answer)) {
-                    scores.mixed++;
-                } else if (reasonAnswers.includes(answer)) {
-                    scores.reason++;
+            // 简单计算：直接统计每种类型的数量
+            answers.forEach(answerType => {
+                if (scores.hasOwnProperty(answerType)) {
+                    scores[answerType]++;
                 } else {
-                    scores.fate++;
+                    console.warn('未知的答案类型:', answerType);
                 }
             });
 
@@ -284,25 +520,45 @@
                 analysis = "你倾向<strong>宿命型</strong>：更随缘顺势，容易接受命运安排。";
             }
 
-            // Send results to Google Sheets
+            if (testMode) {
+                console.log('%c📊 RESULTS CALCULATED', 'background: #2196F3; color: white; padding: 10px; font-size: 14px; font-weight: bold;');
+                console.log('Result Type:', analysisType);
+                console.log('Scores:', scores);
+                console.log('Dominant Category:', dominant);
+                console.log('---');
+            }
+
+            // 保存结果供邮件发送使用
+            currentScores = scores;
+            currentResultType = analysisType;
+            currentAnalysis = analysis;
+            currentTimestamp = new Date().toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai' });
+
+            // 立即保存基本结果到 Google Sheets（不包括邮箱）
             sendToGoogleSheets(scores, analysisType);
 
-            renderResult(scores, analysis);
+            renderResult(scores, analysis, analysisType);
         }
 
-        async function sendToGoogleSheets(scores, resultType) {
+        async function sendToGoogleSheets(scores, resultType, email = '') {
             const scriptURL = 'https://script.google.com/macros/s/AKfycbxFcxcKKOKOtpL-WhbzqP0E1anpvQU7PBhBGRHVaRf0Ssw3_kyK2q-KZ9MsaCF6mqfFLA/exec';
             
             const data = {
-                timestamp: new Date().toISOString(),
-                resultType: resultType,
-                faithScore: scores.faith,
-                reasonScore: scores.reason,
-                mixedScore: scores.mixed,
-                fateScore: scores.fate,
-                totalQuestions: questions.length,
-                answers: answers
+                时间戳: new Date().toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai' }),
+                人格类型: resultType,
+                信仰分数: scores.faith,
+                理智分数: scores.reason,
+                折衷分数: scores.mixed,
+                宿命分数: scores.fate,
+                总题数: questions.length,
+                所有答案: answers.join(', '),
+                邮箱地址: email
             };
+
+            // Log to console for testing
+            console.log('📊 Sending data to Google Sheets...');
+            console.log('📝 Data:', data);
+            console.log('🔗 Script URL:', scriptURL);
 
             try {
                 const response = await fetch(scriptURL, {
@@ -313,14 +569,63 @@
                     },
                     body: JSON.stringify(data)
                 });
-                console.log('Results sent to Google Sheets successfully');
+                console.log('✅ Results sent to Google Sheets successfully');
+                console.log('Response:', response);
+                showTestNotification('✅ Data sent successfully!', 'success');
             } catch (error) {
-                console.error('Error sending to Google Sheets:', error);
+                console.error('❌ Error sending to Google Sheets:', error);
+                showTestNotification('❌ Error sending data', 'error');
             }
         }
 
-        function renderResult(scores, analysis) {
+        function showTestNotification(message, type) {
+            const notification = document.createElement('div');
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                padding: 15px 20px;
+                background: ${type === 'success' ? '#4CAF50' : '#f44336'};
+                color: white;
+                border-radius: 8px;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+                z-index: 10000;
+                animation: slideIn 0.3s ease;
+            `;
+            notification.textContent = message;
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.style.animation = 'slideOut 0.3s ease';
+                setTimeout(() => notification.remove(), 300);
+            }, 3000);
+        }
+
+        function renderResult(scores, analysis, analysisType) {
             const content = document.getElementById('content');
+            
+            // 生成详细的答题记录
+            const typeNames = {
+                'faith': '信仰型',
+                'mixed': '折衷型', 
+                'reason': '理智型',
+                'fate': '宿命型'
+            };
+            
+            let detailedAnswers = '';
+            answers.forEach((answerType, index) => {
+                const question = questionsData[index];
+                const selectedOption = question.options.find(opt => opt.type === answerType);
+                detailedAnswers += `
+                    <div style="margin-bottom: 15px; padding: 12px; background: #f9f9f9; border-radius: 6px; text-align: left;">
+                        <div style="font-weight: bold; color: #667eea; margin-bottom: 5px;">问题 ${index + 1}</div>
+                        <div style="margin-bottom: 5px; line-height: 1.4;">${question.q}</div>
+                        <div style="color: #666; margin-top: 5px;">✓ 你的答案：${selectedOption.text}</div>
+                        <div style="color: #764ba2; font-size: 14px; margin-top: 3px; font-weight: bold;">→ 分类：${typeNames[answerType]}</div>
+                    </div>
+                `;
+            });
+            
             content.innerHTML = `
                 <div class="result">
                     <h2>🎉 测验结果</h2>
@@ -343,14 +648,125 @@
                             <div class="score-value">${scores.fate}</div>
                         </div>
                     </div>
-                    <button class="restart-btn" onclick="restart()">再测一次</button>
+                    
+                    <div style="margin-top: 30px; padding: 20px; background: #f5f5f5; border-radius: 8px;">
+                        <h3 style="color: #667eea; margin-bottom: 10px; font-size: 18px;">📧 将测试结果发送到邮箱</h3>
+                        <p style="color: #666; font-size: 14px; margin-bottom: 15px; line-height: 1.5;">
+                            留下您的邮箱地址，我们将发送包含每题详细答案、分类揭晓和人格分析的完整报告（可选）
+                        </p>
+                        <input type="email" id="emailInput" placeholder="输入您的邮箱地址（可留空）" 
+                            style="width: 100%; padding: 12px; border: 2px solid #e0e0e0; border-radius: 6px; font-size: 16px; margin-bottom: 15px;">
+                        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                            <button class="restart-btn" onclick="sendDetailedReport()" style="flex: 1; min-width: 150px;">
+                                📨 发送报告
+                            </button>
+                            <button class="restart-btn" onclick="restart()" style="flex: 1; min-width: 150px; background: linear-gradient(135deg, #6c757d 0%, #5a6268 100%);">
+                                🔄 重新测试
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <details style="margin-top: 25px; text-align: left; cursor: pointer;">
+                        <summary style="color: #667eea; font-weight: bold; padding: 15px; background: #f5f5f5; border-radius: 8px; list-style: none; display: flex; justify-content: space-between; align-items: center;">
+                            <span>📋 查看详细答题记录（点击展开）</span>
+                            <span style="font-size: 12px; color: #999;">▼</span>
+                        </summary>
+                        <div style="margin-top: 15px; max-height: 500px; overflow-y: auto; padding: 10px; border: 1px solid #e0e0e0; border-radius: 8px;">
+                            ${detailedAnswers}
+                        </div>
+                    </details>
                 </div>
             `;
+        }
+
+        // 保存当前结果供邮件发送使用
+        let currentScores = {};
+        let currentResultType = '';
+        let currentAnalysis = '';
+        let currentTimestamp = '';
+
+        async function sendDetailedReport() {
+            const emailInput = document.getElementById('emailInput');
+            const email = emailInput ? emailInput.value.trim() : '';
+            
+            if (!email) {
+                showTestNotification('✅ 结果已保存（无需发送邮件）', 'success');
+                return;
+            }
+            
+            if (!isValidEmail(email)) {
+                showTestNotification('❌ 请输入有效的邮箱地址', 'error');
+                return;
+            }
+            
+            // 准备邮件和更新数据
+            const typeNames = {
+                'faith': '信仰型',
+                'mixed': '折衷型', 
+                'reason': '理智型',
+                'fate': '宿命型'
+            };
+            
+            const updateData = {
+                更新邮箱: true,  // 标记：更新原记录的邮箱字段
+                时间戳: currentTimestamp, // 用于查找原记录
+                邮箱地址: email,
+                人格类型: currentResultType,
+                信仰分数: currentScores.faith,
+                理智分数: currentScores.reason,
+                折衷分数: currentScores.mixed,
+                宿命分数: currentScores.fate,
+                总题数: questions.length,
+                人格解释: currentAnalysis.replace(/<[^>]*>/g, ''), // 移除HTML标签
+                详细答题: answers.map((answerType, index) => {
+                    const question = questionsData[index];
+                    const selectedOption = question.options.find(opt => opt.type === answerType);
+                    return {
+                        题号: index + 1,
+                        问题: question.q,
+                        答案: selectedOption ? selectedOption.text : '',
+                        分类: typeNames[answerType]
+                    };
+                })
+            };
+
+            const scriptURL = 'https://script.google.com/macros/s/AKfycbxFcxcKKOKOtpL-WhbzqP0E1anpvQU7PBhBGRHVaRf0Ssw3_kyK2q-KZ9MsaCF6mqfFLA/exec';
+            
+            showTestNotification('📤 正在发送邮件并更新记录...', 'success');
+            
+            try {
+                const response = await fetch(scriptURL, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(updateData)
+                });
+                
+                showTestNotification('✅ 邮箱已更新，报告已发送！', 'success');
+                
+                if (testMode) {
+                    console.log('📧 Email updated and sent:', updateData);
+                }
+            } catch (error) {
+                console.error('❌ Error:', error);
+                showTestNotification('❌ 发送失败，请稍后重试', 'error');
+            }
+        }
+
+        function isValidEmail(email) {
+            const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            return re.test(email);
         }
 
         function restart() {
             currentQuestion = 0;
             answers = [];
+            // 重新打乱选项顺序
+            questions.forEach((q, index) => {
+                q.options = shuffleOptions(questionsData[index].options);
+            });
             renderQuestion();
         }
 
