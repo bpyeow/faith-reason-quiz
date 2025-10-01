@@ -532,6 +532,7 @@
             currentScores = scores;
             currentResultType = analysisType;
             currentAnalysis = analysis;
+            currentTimestamp = new Date().toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai' });
 
             // 立即保存基本结果到 Google Sheets（不包括邮箱）
             sendToGoogleSheets(scores, analysisType);
@@ -682,6 +683,7 @@
         let currentScores = {};
         let currentResultType = '';
         let currentAnalysis = '';
+        let currentTimestamp = '';
 
         async function sendDetailedReport() {
             const emailInput = document.getElementById('emailInput');
@@ -697,7 +699,7 @@
                 return;
             }
             
-            // 准备邮件数据（只用于发送邮件，不保存到表格）
+            // 准备邮件和更新数据
             const typeNames = {
                 'faith': '信仰型',
                 'mixed': '折衷型', 
@@ -705,10 +707,10 @@
                 'fate': '宿命型'
             };
             
-            const emailData = {
-                仅发送邮件: true,  // 标记：只发送邮件，不保存数据
+            const updateData = {
+                更新邮箱: true,  // 标记：更新原记录的邮箱字段
+                时间戳: currentTimestamp, // 用于查找原记录
                 邮箱地址: email,
-                时间戳: new Date().toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai' }),
                 人格类型: currentResultType,
                 信仰分数: currentScores.faith,
                 理智分数: currentScores.reason,
@@ -730,7 +732,7 @@
 
             const scriptURL = 'https://script.google.com/macros/s/AKfycbxFcxcKKOKOtpL-WhbzqP0E1anpvQU7PBhBGRHVaRf0Ssw3_kyK2q-KZ9MsaCF6mqfFLA/exec';
             
-            showTestNotification('📤 正在发送邮件...', 'success');
+            showTestNotification('📤 正在发送邮件并更新记录...', 'success');
             
             try {
                 const response = await fetch(scriptURL, {
@@ -739,13 +741,13 @@
                     headers: {
                         'Content-Type': 'application/json',
                     },
-                    body: JSON.stringify(emailData)
+                    body: JSON.stringify(updateData)
                 });
                 
-                showTestNotification('✅ 报告已发送到您的邮箱！请查收', 'success');
+                showTestNotification('✅ 邮箱已更新，报告已发送！', 'success');
                 
                 if (testMode) {
-                    console.log('📧 Email sent (not saved to sheet):', emailData);
+                    console.log('📧 Email updated and sent:', updateData);
                 }
             } catch (error) {
                 console.error('❌ Error:', error);
