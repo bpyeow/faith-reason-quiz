@@ -173,9 +173,54 @@
                 grid-template-columns: 1fr;
             }
         }
+        
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+        
+        @keyframes slideOut {
+            from {
+                transform: translateX(0);
+                opacity: 1;
+            }
+            to {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+        }
+        
+        .test-mode-btn {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: #ff9800;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 50px;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(255, 152, 0, 0.4);
+            font-size: 14px;
+            font-weight: bold;
+            z-index: 9999;
+            transition: all 0.3s ease;
+        }
+        
+        .test-mode-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 6px 20px rgba(255, 152, 0, 0.6);
+        }
     </style>
 </head>
 <body>
+    <button id="testModeBtn" class="test-mode-btn" onclick="toggleTestMode()">🔍 Test Mode</button>
     <div class="container" id="app">
         <h1>信仰与理性测验</h1>
         <div id="content"></div>
@@ -217,6 +262,28 @@
 
         let currentQuestion = 0;
         let answers = [];
+        let testMode = false;
+
+        function toggleTestMode() {
+            testMode = !testMode;
+            const btn = document.getElementById('testModeBtn');
+            if (testMode) {
+                btn.textContent = '🔍 Test Mode: ON';
+                btn.style.background = '#4CAF50';
+                showTestNotification('🔍 Test Mode Enabled - Check console (F12)', 'success');
+                console.log('%c🔍 TEST MODE ENABLED', 'background: #4CAF50; color: white; padding: 10px; font-size: 16px; font-weight: bold;');
+                console.log('📋 Instructions:');
+                console.log('1. Open this console (F12)');
+                console.log('2. Complete the quiz');
+                console.log('3. Watch for data being sent');
+                console.log('4. Check your Google Sheet for results');
+            } else {
+                btn.textContent = '🔍 Test Mode';
+                btn.style.background = '#ff9800';
+                showTestNotification('Test Mode Disabled', 'success');
+                console.log('%c🔍 TEST MODE DISABLED', 'background: #ff9800; color: white; padding: 10px; font-size: 16px; font-weight: bold;');
+            }
+        }
 
         function renderQuestion() {
             const progress = ((currentQuestion / questions.length) * 100).toFixed(0);
@@ -238,10 +305,19 @@
 
         function handleAnswer(option) {
             answers[currentQuestion] = option;
+            
+            if (testMode) {
+                console.log(`📝 Question ${currentQuestion + 1} answered: "${option}"`);
+            }
+            
             if (currentQuestion < questions.length - 1) {
                 currentQuestion++;
                 renderQuestion();
             } else {
+                if (testMode) {
+                    console.log('%c✅ Quiz Completed!', 'background: #4CAF50; color: white; padding: 10px; font-size: 14px; font-weight: bold;');
+                    console.log('📊 Calculating results...');
+                }
                 calculateResult();
             }
         }
@@ -284,6 +360,14 @@
                 analysis = "你倾向<strong>宿命型</strong>：更随缘顺势，容易接受命运安排。";
             }
 
+            if (testMode) {
+                console.log('%c📊 RESULTS CALCULATED', 'background: #2196F3; color: white; padding: 10px; font-size: 14px; font-weight: bold;');
+                console.log('Result Type:', analysisType);
+                console.log('Scores:', scores);
+                console.log('Dominant Category:', dominant);
+                console.log('---');
+            }
+
             // Send results to Google Sheets
             sendToGoogleSheets(scores, analysisType);
 
@@ -304,6 +388,11 @@
                 answers: answers
             };
 
+            // Log to console for testing
+            console.log('📊 Sending data to Google Sheets...');
+            console.log('📝 Data:', data);
+            console.log('🔗 Script URL:', scriptURL);
+
             try {
                 const response = await fetch(scriptURL, {
                     method: 'POST',
@@ -313,10 +402,36 @@
                     },
                     body: JSON.stringify(data)
                 });
-                console.log('Results sent to Google Sheets successfully');
+                console.log('✅ Results sent to Google Sheets successfully');
+                console.log('Response:', response);
+                showTestNotification('✅ Data sent successfully!', 'success');
             } catch (error) {
-                console.error('Error sending to Google Sheets:', error);
+                console.error('❌ Error sending to Google Sheets:', error);
+                showTestNotification('❌ Error sending data', 'error');
             }
+        }
+
+        function showTestNotification(message, type) {
+            const notification = document.createElement('div');
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                padding: 15px 20px;
+                background: ${type === 'success' ? '#4CAF50' : '#f44336'};
+                color: white;
+                border-radius: 8px;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+                z-index: 10000;
+                animation: slideIn 0.3s ease;
+            `;
+            notification.textContent = message;
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.style.animation = 'slideOut 0.3s ease';
+                setTimeout(() => notification.remove(), 300);
+            }, 3000);
         }
 
         function renderResult(scores, analysis) {
