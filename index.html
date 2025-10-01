@@ -533,6 +533,9 @@
             currentResultType = analysisType;
             currentAnalysis = analysis;
 
+            // 立即保存基本结果到 Google Sheets（不包括邮箱）
+            sendToGoogleSheets(scores, analysisType);
+
             renderResult(scores, analysis, analysisType);
         }
 
