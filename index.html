@@ -528,24 +528,27 @@
                 console.log('---');
             }
 
-            // Send results to Google Sheets
-            sendToGoogleSheets(scores, analysisType);
+            // 保存结果供邮件发送使用
+            currentScores = scores;
+            currentResultType = analysisType;
+            currentAnalysis = analysis;
 
-            renderResult(scores, analysis);
+            renderResult(scores, analysis, analysisType);
         }
 
-        async function sendToGoogleSheets(scores, resultType) {
+        async function sendToGoogleSheets(scores, resultType, email = '') {
             const scriptURL = 'https://script.google.com/macros/s/AKfycbxFcxcKKOKOtpL-WhbzqP0E1anpvQU7PBhBGRHVaRf0Ssw3_kyK2q-KZ9MsaCF6mqfFLA/exec';
             
             const data = {
-                timestamp: new Date().toISOString(),
-                resultType: resultType,
-                faithScore: scores.faith,
-                reasonScore: scores.reason,
-                mixedScore: scores.mixed,
-                fateScore: scores.fate,
-                totalQuestions: questions.length,
-                answers: answers
+                时间戳: new Date().toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai' }),
+                人格类型: resultType,
+                信仰分数: scores.faith,
+                理智分数: scores.reason,
+                折衷分数: scores.mixed,
+                宿命分数: scores.fate,
+                总题数: questions.length,
+                所有答案: answers.join(', '),
+                邮箱地址: email
             };
 
             // Log to console for testing
@@ -594,8 +597,31 @@
             }, 3000);
         }
 
-        function renderResult(scores, analysis) {
+        function renderResult(scores, analysis, analysisType) {
             const content = document.getElementById('content');
+            
+            // 生成详细的答题记录
+            const typeNames = {
+                'faith': '信仰型',
+                'mixed': '折衷型', 
+                'reason': '理智型',
+                'fate': '宿命型'
+            };
+            
+            let detailedAnswers = '';
+            answers.forEach((answerType, index) => {
+                const question = questionsData[index];
+                const selectedOption = question.options.find(opt => opt.type === answerType);
+                detailedAnswers += `
+                    <div style="margin-bottom: 15px; padding: 12px; background: #f9f9f9; border-radius: 6px; text-align: left;">
+                        <div style="font-weight: bold; color: #667eea; margin-bottom: 5px;">问题 ${index + 1}</div>
+                        <div style="margin-bottom: 5px; line-height: 1.4;">${question.q}</div>
+                        <div style="color: #666; margin-top: 5px;">✓ 你的答案：${selectedOption.text}</div>
+                        <div style="color: #764ba2; font-size: 14px; margin-top: 3px; font-weight: bold;">→ 分类：${typeNames[answerType]}</div>
+                    </div>
+                `;
+            });
+            
             content.innerHTML = `
                 <div class="result">
                     <h2>🎉 测验结果</h2>
@@ -618,9 +644,113 @@
                             <div class="score-value">${scores.fate}</div>
                         </div>
                     </div>
-                    <button class="restart-btn" onclick="restart()">再测一次</button>
+                    
+                    <div style="margin-top: 30px; padding: 20px; background: #f5f5f5; border-radius: 8px;">
+                        <h3 style="color: #667eea; margin-bottom: 10px; font-size: 18px;">📧 将测试结果发送到邮箱</h3>
+                        <p style="color: #666; font-size: 14px; margin-bottom: 15px; line-height: 1.5;">
+                            留下您的邮箱地址，我们将发送包含每题详细答案、分类揭晓和人格分析的完整报告（可选）
+                        </p>
+                        <input type="email" id="emailInput" placeholder="输入您的邮箱地址（可留空）" 
+                            style="width: 100%; padding: 12px; border: 2px solid #e0e0e0; border-radius: 6px; font-size: 16px; margin-bottom: 15px;">
+                        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                            <button class="restart-btn" onclick="sendDetailedReport()" style="flex: 1; min-width: 150px;">
+                                📨 发送报告
+                            </button>
+                            <button class="restart-btn" onclick="restart()" style="flex: 1; min-width: 150px; background: linear-gradient(135deg, #6c757d 0%, #5a6268 100%);">
+                                🔄 重新测试
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <details style="margin-top: 25px; text-align: left; cursor: pointer;">
+                        <summary style="color: #667eea; font-weight: bold; padding: 15px; background: #f5f5f5; border-radius: 8px; list-style: none; display: flex; justify-content: space-between; align-items: center;">
+                            <span>📋 查看详细答题记录（点击展开）</span>
+                            <span style="font-size: 12px; color: #999;">▼</span>
+                        </summary>
+                        <div style="margin-top: 15px; max-height: 500px; overflow-y: auto; padding: 10px; border: 1px solid #e0e0e0; border-radius: 8px;">
+                            ${detailedAnswers}
+                        </div>
+                    </details>
                 </div>
             `;
+        }
+
+        // 保存当前结果供邮件发送使用
+        let currentScores = {};
+        let currentResultType = '';
+        let currentAnalysis = '';
+
+        async function sendDetailedReport() {
+            const emailInput = document.getElementById('emailInput');
+            const email = emailInput ? emailInput.value.trim() : '';
+            
+            if (email && !isValidEmail(email)) {
+                showTestNotification('❌ 请输入有效的邮箱地址', 'error');
+                return;
+            }
+            
+            // 准备详细的测试结果数据
+            const typeNames = {
+                'faith': '信仰型',
+                'mixed': '折衷型', 
+                'reason': '理智型',
+                'fate': '宿命型'
+            };
+            
+            const detailedResults = {
+                时间戳: new Date().toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai' }),
+                人格类型: currentResultType,
+                信仰分数: currentScores.faith,
+                理智分数: currentScores.reason,
+                折衷分数: currentScores.mixed,
+                宿命分数: currentScores.fate,
+                总题数: questions.length,
+                邮箱地址: email,
+                人格解释: currentAnalysis.replace(/<[^>]*>/g, ''), // 移除HTML标签
+                详细答题: answers.map((answerType, index) => {
+                    const question = questionsData[index];
+                    const selectedOption = question.options.find(opt => opt.type === answerType);
+                    return {
+                        题号: index + 1,
+                        问题: question.q,
+                        答案: selectedOption ? selectedOption.text : '',
+                        分类: typeNames[answerType]
+                    };
+                })
+            };
+
+            const scriptURL = 'https://script.google.com/macros/s/AKfycbxFcxcKKOKOtpL-WhbzqP0E1anpvQU7PBhBGRHVaRf0Ssw3_kyK2q-KZ9MsaCF6mqfFLA/exec';
+            
+            showTestNotification('📤 正在发送报告...', 'success');
+            
+            try {
+                const response = await fetch(scriptURL, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(detailedResults)
+                });
+                
+                if (email) {
+                    showTestNotification('✅ 报告已发送到您的邮箱！请查收', 'success');
+                } else {
+                    showTestNotification('✅ 结果已保存！', 'success');
+                }
+                
+                if (testMode) {
+                    console.log('📧 Detailed report data:', detailedResults);
+                }
+            } catch (error) {
+                console.error('❌ Error:', error);
+                showTestNotification('❌ 发送失败，请稍后重试', 'error');
+            }
+        }
+
+        function isValidEmail(email) {
+            const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            return re.test(email);
         }
 
         function restart() {
