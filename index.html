@@ -687,12 +687,17 @@
             const emailInput = document.getElementById('emailInput');
             const email = emailInput ? emailInput.value.trim() : '';
             
-            if (email && !isValidEmail(email)) {
+            if (!email) {
+                showTestNotification('✅ 结果已保存（无需发送邮件）', 'success');
+                return;
+            }
+            
+            if (!isValidEmail(email)) {
                 showTestNotification('❌ 请输入有效的邮箱地址', 'error');
                 return;
             }
             
-            // 准备详细的测试结果数据
+            // 准备邮件数据（只用于发送邮件，不保存到表格）
             const typeNames = {
                 'faith': '信仰型',
                 'mixed': '折衷型', 
@@ -700,7 +705,9 @@
                 'fate': '宿命型'
             };
             
-            const detailedResults = {
+            const emailData = {
+                仅发送邮件: true,  // 标记：只发送邮件，不保存数据
+                邮箱地址: email,
                 时间戳: new Date().toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai' }),
                 人格类型: currentResultType,
                 信仰分数: currentScores.faith,
@@ -708,7 +715,6 @@
                 折衷分数: currentScores.mixed,
                 宿命分数: currentScores.fate,
                 总题数: questions.length,
-                邮箱地址: email,
                 人格解释: currentAnalysis.replace(/<[^>]*>/g, ''), // 移除HTML标签
                 详细答题: answers.map((answerType, index) => {
                     const question = questionsData[index];
@@ -724,7 +730,7 @@
 
             const scriptURL = 'https://script.google.com/macros/s/AKfycbxFcxcKKOKOtpL-WhbzqP0E1anpvQU7PBhBGRHVaRf0Ssw3_kyK2q-KZ9MsaCF6mqfFLA/exec';
             
-            showTestNotification('📤 正在发送报告...', 'success');
+            showTestNotification('📤 正在发送邮件...', 'success');
             
             try {
                 const response = await fetch(scriptURL, {
@@ -733,17 +739,13 @@
                     headers: {
                         'Content-Type': 'application/json',
                     },
-                    body: JSON.stringify(detailedResults)
+                    body: JSON.stringify(emailData)
                 });
                 
-                if (email) {
-                    showTestNotification('✅ 报告已发送到您的邮箱！请查收', 'success');
-                } else {
-                    showTestNotification('✅ 结果已保存！', 'success');
-                }
+                showTestNotification('✅ 报告已发送到您的邮箱！请查收', 'success');
                 
                 if (testMode) {
-                    console.log('📧 Detailed report data:', detailedResults);
+                    console.log('📧 Email sent (not saved to sheet):', emailData);
                 }
             } catch (error) {
                 console.error('❌ Error:', error);
