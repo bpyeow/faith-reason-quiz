@@ -1,0 +1,311 @@
+/**
+ * Google Apps Script - 信仰与理性测验数据处理 (优化版)
+ * 
+ * 功能：
+ * 1. 接收测验结果数据
+ * 2. 保存到 Google Sheets（仅汇总数据）
+ * 3. 如果用户提供邮箱，发送详细测试报告
+ * 
+ * 改进说明：
+ * - 使用纯表格布局，确保 Outlook 兼容性
+ * - 移除 CSS Grid 和渐变背景
+ * - 所有样式都采用内联方式
+ * - 简化 HTML 结构，提升跨平台兼容性
+ * 
+ * 部署说明：
+ * 1. 在 Google Apps Script 中创建新项目
+ * 2. 复制此代码
+ * 3. 创建一个 Google Sheet，命名为"测验结果"
+ * 4. 部署为 Web 应用（执行身份：我，访问权限：任何人）
+ * 5. 复制部署的 URL 到 index.html 中
+ */
+
+// 配置区域
+const SHEET_NAME = '测验结果';
+
+function doPost(e) {
+  try {
+    const data = JSON.parse(e.postData.contents);
+    
+    // 检查是否需要更新邮箱地址
+    if (data.更新邮箱 === true) {
+      // 更新原记录的邮箱字段并发送邮件
+      updateEmailInSheet(data);
+      if (data.邮箱地址) {
+        sendEmailReport(data);
+      }
+      return ContentService.createTextOutput(JSON.stringify({
+        status: 'success',
+        message: '邮箱已更新，邮件已发送'
+      })).setMimeType(ContentService.MimeType.JSON);
+    }
+    
+    // 正常流程：保存新记录到表格
+    saveToSheet(data);
+    
+    return ContentService.createTextOutput(JSON.stringify({
+      status: 'success',
+      message: '数据已保存'
+    })).setMimeType(ContentService.MimeType.JSON);
+    
+  } catch (error) {
+    Logger.log('错误: ' + error.toString());
+    return ContentService.createTextOutput(JSON.stringify({
+      status: 'error',
+      message: error.toString()
+    })).setMimeType(ContentService.MimeType.JSON);
+  }
+}
+
+function saveToSheet(data) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  let sheet = ss.getSheetByName(SHEET_NAME);
+  
+  // 如果表格不存在，创建它
+  if (!sheet) {
+    sheet = ss.insertSheet(SHEET_NAME);
+    // 添加表头
+    sheet.appendRow([
+      '时间戳', '人格类型', '信仰分数', '理智分数', 
+      '折衷分数', '宿命分数', '总题数', '邮箱地址'
+    ]);
+    // 冻结表头
+    sheet.setFrozenRows(1);
+    // 格式化表头
+    const headerRange = sheet.getRange(1, 1, 1, 8);
+    headerRange.setBackground('#667eea');
+    headerRange.setFontColor('#ffffff');
+    headerRange.setFontWeight('bold');
+    headerRange.setHorizontalAlignment('center');
+  }
+  
+  // 添加数据行
+  sheet.appendRow([
+    data.时间戳 || new Date().toLocaleString('zh-CN'),
+    data.人格类型 || '',
+    data.信仰分数 || 0,
+    data.理智分数 || 0,
+    data.折衷分数 || 0,
+    data.宿命分数 || 0,
+    data.总题数 || 0,
+    data.邮箱地址 || '未提供'
+  ]);
+  
+  // 自动调整列宽
+  sheet.autoResizeColumns(1, 8);
+}
+
+function updateEmailInSheet(data) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ss.getSheetByName(SHEET_NAME);
+  
+  if (!sheet) {
+    Logger.log('找不到工作表');
+    return;
+  }
+  
+  // 获取最后一行数据的行号
+  const lastRow = sheet.getLastRow();
+  if (lastRow < 2) {
+    Logger.log('没有数据需要更新');
+    return;
+  }
+  
+  // 检查最后一行的数据，确认是否需要更新
+  const lastRowData = sheet.getRange(lastRow, 1, 1, 8).getValues()[0];
+  const lastTimestamp = lastRowData[0];
+  const lastPersonality = lastRowData[1];
+  const lastEmail = lastRowData[7];
+  
+  Logger.log('最后一行数据：');
+  Logger.log('时间戳: ' + lastTimestamp);
+  Logger.log('人格类型: ' + lastPersonality);
+  Logger.log('当前邮箱: ' + lastEmail);
+  
+  // 检查人格类型是否匹配（增加可靠性）
+  if (lastPersonality === data.人格类型 && 
+      (lastEmail === '未提供' || lastEmail === '' || lastEmail === null)) {
+    // 更新最后一行的邮箱地址
+    sheet.getRange(lastRow, 8).setValue(data.邮箱地址);
+    Logger.log('✅ 已更新第 ' + lastRow + ' 行的邮箱地址为: ' + data.邮箱地址);
+  } else {
+    Logger.log('⚠️ 无法确认是否为同一记录，未更新');
+    Logger.log('请求的人格类型: ' + data.人格类型);
+  }
+}
+
+function sendEmailReport(data) {
+  const email = data.邮箱地址;
+  if (!email) return;
+  
+  // 构建邮件主题
+  const subject = `🎯 您的信仰与理性测验结果 - ${data.人格类型}`;
+  
+  // 构建邮件正文 - 使用表格布局，确保跨平台兼容
+  let htmlBody = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    </head>
+    <body style="margin: 0; padding: 0; font-family: Arial, sans-serif; background-color: #f5f5f5;">
+      <!-- 外层容器表格 -->
+      <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #f5f5f5; padding: 20px 0;">
+        <tr>
+          <td align="center">
+            <!-- 主内容表格 -->
+            <table width="600" cellpadding="0" cellspacing="0" border="0" style="background-color: #ffffff; max-width: 600px;">
+              
+              <!-- 顶部标题区域 -->
+              <tr>
+                <td style="background-color: #667eea; padding: 30px 20px; text-align: center;">
+                  <h1 style="margin: 0; font-size: 24px; color: #ffffff; font-weight: bold;">🎉 信仰与理性测验结果报告</h1>
+                  <p style="margin: 10px 0 0 0; font-size: 14px; color: #ffffff;">${data.时间戳}</p>
+                </td>
+              </tr>
+              
+              <!-- 结果总览区域 -->
+              <tr>
+                <td style="padding: 30px 20px; background-color: #ffffff;">
+                  <h2 style="margin: 0 0 20px 0; font-size: 20px; color: #667eea;">📊 您的测验结果</h2>
+                  
+                  <!-- 人格类型说明 -->
+                  <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #fff9e6; border-left: 4px solid #ffc107; margin-bottom: 25px;">
+                    <tr>
+                      <td style="padding: 15px;">
+                        <p style="margin: 0; font-size: 16px; color: #333333; font-weight: bold;">${data.人格类型}</p>
+                        <p style="margin: 8px 0 0 0; font-size: 14px; color: #666666; line-height: 1.6;">${data.人格解释 || ''}</p>
+                      </td>
+                    </tr>
+                  </table>
+                  
+                  <!-- 分数表格 - 2x2 网格 -->
+                  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                    <tr>
+                      <!-- 信仰成分 -->
+                      <td width="48%" style="background-color: #667eea; padding: 20px; text-align: center; vertical-align: top;">
+                        <p style="margin: 0; font-size: 14px; color: #ffffff;">信仰成分</p>
+                        <p style="margin: 10px 0 0 0; font-size: 32px; color: #ffffff; font-weight: bold;">${data.信仰分数}</p>
+                      </td>
+                      <td width="4%"></td>
+                      <!-- 理智成分 -->
+                      <td width="48%" style="background-color: #667eea; padding: 20px; text-align: center; vertical-align: top;">
+                        <p style="margin: 0; font-size: 14px; color: #ffffff;">理智成分</p>
+                        <p style="margin: 10px 0 0 0; font-size: 32px; color: #ffffff; font-weight: bold;">${data.理智分数}</p>
+                      </td>
+                    </tr>
+                    <tr><td colspan="3" height="15"></td></tr>
+                    <tr>
+                      <!-- 折衷成分 -->
+                      <td width="48%" style="background-color: #764ba2; padding: 20px; text-align: center; vertical-align: top;">
+                        <p style="margin: 0; font-size: 14px; color: #ffffff;">折衷成分</p>
+                        <p style="margin: 10px 0 0 0; font-size: 32px; color: #ffffff; font-weight: bold;">${data.折衷分数}</p>
+                      </td>
+                      <td width="4%"></td>
+                      <!-- 宿命成分 -->
+                      <td width="48%" style="background-color: #764ba2; padding: 20px; text-align: center; vertical-align: top;">
+                        <p style="margin: 0; font-size: 14px; color: #ffffff;">宿命成分</p>
+                        <p style="margin: 10px 0 0 0; font-size: 32px; color: #ffffff; font-weight: bold;">${data.宿命分数}</p>
+                      </td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+              
+              <!-- 详细答题记录标题 -->
+              <tr>
+                <td style="padding: 0 20px 20px 20px; background-color: #ffffff;">
+                  <h2 style="margin: 20px 0 10px 0; font-size: 20px; color: #667eea;">📝 详细答题记录</h2>
+                  <p style="margin: 0; font-size: 14px; color: #666666;">以下是您的每道题目的答案和对应的人格分类</p>
+                </td>
+              </tr>
+  `;
+  
+  // 添加详细答题记录
+  if (data.详细答题 && Array.isArray(data.详细答题)) {
+    data.详细答题.forEach(item => {
+      htmlBody += `
+              <!-- 问题项 -->
+              <tr>
+                <td style="padding: 0 20px 15px 20px; background-color: #ffffff;">
+                  <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #f9f9f9; border-left: 4px solid #667eea;">
+                    <tr>
+                      <td style="padding: 15px;">
+                        <p style="margin: 0 0 8px 0; font-size: 14px; color: #667eea; font-weight: bold;">问题 ${item.题号}</p>
+                        <p style="margin: 0 0 12px 0; font-size: 15px; color: #333333; font-weight: 500; line-height: 1.5;">${item.问题}</p>
+                        <p style="margin: 0 0 8px 0; font-size: 14px; color: #666666;">✓ 您的答案：${item.答案}</p>
+                        <table cellpadding="0" cellspacing="0" border="0">
+                          <tr>
+                            <td style="background-color: #764ba2; padding: 6px 12px; font-size: 13px; color: #ffffff;">→ ${item.分类}</td>
+                          </tr>
+                        </table>
+                      </td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+      `;
+    });
+  }
+  
+  htmlBody += `
+              <!-- 页脚 -->
+              <tr>
+                <td style="padding: 30px 20px; background-color: #ffffff; border-top: 1px solid #e0e0e0; text-align: center;">
+                  <p style="margin: 0; font-size: 14px; color: #666666;">感谢您参与信仰与理性测验！</p>
+                  <p style="margin: 10px 0 0 0; font-size: 12px; color: #999999;">此邮件由系统自动发送，请勿直接回复</p>
+                </td>
+              </tr>
+              
+            </table>
+          </td>
+        </tr>
+      </table>
+    </body>
+    </html>
+  `;
+  
+  // 发送邮件
+  try {
+    MailApp.sendEmail({
+      to: email,
+      subject: subject,
+      htmlBody: htmlBody
+    });
+    Logger.log('邮件已发送到: ' + email);
+  } catch (error) {
+    Logger.log('邮件发送失败: ' + error.toString());
+  }
+}
+
+// 测试函数
+function testEmail() {
+  const testData = {
+    时间戳: new Date().toLocaleString('zh-CN'),
+    人格类型: '折衷型',
+    信仰分数: 8,
+    理智分数: 10,
+    折衷分数: 9,
+    宿命分数: 3,
+    总题数: 30,
+    邮箱地址: 'test@example.com', // 改成你的测试邮箱
+    人格解释: '你倾向折衷型：信仰与理智兼顾，既尊重传统，也重视现实。',
+    详细答题: [
+      {
+        题号: 1,
+        问题: '如果有人说：拜三拜，财神就会眷顾你。你的第一感觉是？',
+        答案: '不妨试试看，也许有用',
+        分类: '折衷型'
+      },
+      {
+        题号: 2,
+        问题: '过年时亲友拉你去拜财神，你会：',
+        答案: '跟着去，尊重习俗',
+        分类: '折衷型'
+      }
+    ]
+  };
+  
+  sendEmailReport(testData);
+}
